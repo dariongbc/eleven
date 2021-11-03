@@ -86,16 +86,16 @@ def expression_ddcq(sample_frame, ref_target, ref_sample):
     # It might be more correct to replace asarray calls (to discard indexes)
     # with proper joins.
   
-    ref_target_df = sample_frame.ix[sample_frame['Target'] == ref_target, ['Sample', 'Cq']]
+    ref_target_df = sample_frame.loc[sample_frame['Target'] == ref_target, ['Sample', 'Cq']]
     ref_target_grouped = ref_target_df.groupby('Sample')
     ref_target_mean_by_sample = ref_target_grouped['Cq'].aggregate(average_cq)
-    ref_target_mean_list = ref_target_mean_by_sample.ix[sample_frame['Sample']]
+    ref_target_mean_list = ref_target_mean_by_sample.loc[sample_frame['Sample']]
     ref_target_delta = asarray(ref_target_mean_list - ref_target_mean_by_sample[ref_sample])
 
-    ref_sample_df = sample_frame.ix[sample_frame['Sample'] == ref_sample, ['Target', 'Cq']]
+    ref_sample_df = sample_frame.loc[sample_frame['Sample'] == ref_sample, ['Target', 'Cq']]
     ref_sample_grouped = ref_sample_df.groupby('Target')
     ref_sample_mean_by_target = ref_sample_grouped['Cq'].aggregate(average_cq)
-    ref_sample_delta = asarray(sample_frame['Cq'] - asarray(ref_sample_mean_by_target.ix[sample_frame['Target']]))
+    ref_sample_delta = asarray(sample_frame['Cq'] - asarray(ref_sample_mean_by_target.loc[sample_frame['Target']]))
 
     rel_exp = pd.Series(
             power(2, ref_target_delta - ref_sample_delta),
@@ -119,11 +119,11 @@ def expression_nf(sample_frame, nf_n, ref_sample):
         frame.
     :rtype: Series
     """
-    ref_sample_df = sample_frame.ix[sample_frame['Sample'] == ref_sample, ['Target', 'Cq']]
+    ref_sample_df = sample_frame.loc[sample_frame['Sample'] == ref_sample, ['Target', 'Cq']]
     ref_sample_cq = ref_sample_df.groupby('Target')['Cq'].aggregate(average_cq)
 
-    delta = -sample_frame['Cq'] + asarray(ref_sample_cq.ix[sample_frame['Target']])
-    rel = power(2, delta) / asarray(nf_n.ix[sample_frame['Sample']])
+    delta = -sample_frame['Cq'] + asarray(ref_sample_cq.loc[sample_frame['Target']])
+    rel = power(2, delta) / asarray(nf_n.loc[sample_frame['Sample']])
     return rel
 
 def collect_expression(sample_frame, ref_targets, ref_sample):
@@ -176,7 +176,7 @@ def rank_targets(sample_frame, ref_targets, ref_sample):
             Vs = []
             for ref_target in ref_targets:
                 if ref_target == test_target or ref_target in worst: continue
-                A = logt.ix[zip(all_samples, repeat(test_target)), ref_target]
+                A = logt.loc[zip(all_samples, repeat(test_target)), ref_target]
                 Vs.append(A.std())
             M.append( (sum(Vs)/(len(ref_targets)-len(worst)-1), test_target) )
         worst.append(max(M)[1])
@@ -209,7 +209,7 @@ def calculate_all_nfs(sample_frame, ranked_targets, ref_sample):
     samples = sample_frame['Sample'].unique()
     nfs = {}
     for i in xrange(1, len(ranked_targets)+1):
-        nfs[i] = gmean([pow(2, -grouped.ix[zip(repeat(ref_gene), samples)] + grouped.ix[ref_gene, ref_sample]) for ref_gene in ranked_targets[:i]])
+        nfs[i] = gmean([pow(2, -grouped.loc[zip(repeat(ref_gene), samples)] + grouped.loc[ref_gene, ref_sample]) for ref_gene in ranked_targets[:i]])
     return pd.DataFrame(nfs, index=samples)
 
 def calculate_nf(sample_frame, ref_targets, ref_sample):
@@ -224,7 +224,7 @@ def calculate_nf(sample_frame, ref_targets, ref_sample):
     """
     grouped = sample_frame.groupby(['Target', 'Sample'])['Cq'].aggregate(average_cq)
     samples = sample_frame['Sample'].unique()
-    nfs = gmean([pow(2, -grouped.ix[zip(repeat(ref_gene), samples)] + grouped.ix[ref_gene, ref_sample]) for ref_gene in ref_targets])
+    nfs = gmean([pow(2, -grouped.loc[zip(repeat(ref_gene), samples)] + grouped.loc[ref_gene, ref_sample]) for ref_gene in ref_targets])
     return pd.Series(nfs, index=samples)
 
 def calculate_v(nfs):
